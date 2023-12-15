@@ -11,8 +11,10 @@ namespace Lib.Interfaces
     {
         public Comment GetById(int id);
         public List<Comment> GetByName(string name);
+        public void AddComment(string name, string message);
         public void AddComment(int id, string name, string message);
         public void UpdateComment(int id, string newMessage);
         public void DeleteComment(int id);
+        public void RecreateDatabase();
     }
 }

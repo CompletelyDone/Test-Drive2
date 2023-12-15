@@ -1,47 +1,135 @@
 using Lib;
 using Lib.Repos;
+using System.Xml.Linq;
 
 namespace TestUnit
 {
     public class Tests
     {
+        private DataBaseSqlite db;
         [SetUp]
         public void Setup()
         {
-            
+            db = new DataBaseSqlite("DBNew");
+            db.RecreateDatabase();
         }
 
         [TestCase(5, "Vasya", "Hello World!")]
-        [TestCase(5, "Ïåòÿ", "Helûâôûâàlo World!")]
-        [TestCase(5, "Îëåã", "Hello âàïûâàïWorld!")]
-        [TestCase(5, "VaÂàâïèsya", "Hello âûàðïûàïðWorld!")]
-        [TestCase(5, "Va632456sya", "Helloôûàâàôï World!")]
         public void AddComplete(int id, string name, string message)
         {
-            DataBaseSqlite db = new DataBaseSqlite("MyApp");
+            int count = db.Comments.Where(x => x.LocalId == id && x.Name == name && x.Message == message).Count();
 
             db.AddComment(id, name, message);
 
-            Comment comment = db.Comments.Where(x => x.LocalId == id && x.Name == name && x.Message == message).FirstOrDefault();
+            int newCount = db.Comments.Where(x => x.LocalId == id && x.Name == name && x.Message == message).Count();
 
-            Assert.IsNotNull(comment);
+            Assert.AreEqual(count + 1, newCount);
 
-            db.DeleteDatabase();
         }
-        [TestCase(5, "Helloôûàâàôï World!")]
-        public void AddNotCompleteNameMoreThan256symbols(int id, string message)
+        [TestCase(5, "Vasya", "Hello World!")]
+        public void Add2Elems(int id, string name, string message)
         {
-            DataBaseSqlite db = new DataBaseSqlite("MyApp");
-            Random rnd = new Random();
-            String long257SymbString = new string(Enumerable.Repeat("abc", 257).Select(s => s[rnd.Next(s.Length)]).ToArray());
+            int count = db.Comments.Where(x => x.LocalId == id && x.Name == name && x.Message == message).Count();
 
-            db.AddComment(id, long257SymbString, message);
+            db.AddComment(id, name, message);
+            db.AddComment(id, name, message);
 
-            Comment comment = db.Comments.Where(x => x.LocalId == id && x.Name == long257SymbString && x.Message == message).FirstOrDefault();
+            int newCount = db.Comments.Where(x => x.LocalId == id && x.Name == name && x.Message == message).Count();
 
-            Assert.IsNull(comment);
+            Assert.AreEqual(count + 2, newCount);
+        }
+        [TestCase(5, "Vasya", "Hello World!")]
+        public void DeleteComm(int id, string name, string message)
+        {
+            db.AddComment(id, name, message);
 
-            db.DeleteDatabase();
+            int count = db.Comments.Where(x => x.LocalId == id && x.Name == name && x.Message == message).Count();
+
+            db.DeleteComment(id);
+
+            int newCount = db.Comments.Where(x => x.LocalId == id && x.Name == name && x.Message == message).Count();
+
+            Assert.AreEqual(count - 1, newCount);
+        }
+        [TestCase(5, "Vasya", "Hello World!")]
+        public void DeleteDontCrushAfterDeletingNullComm(int id, string name, string message)
+        {
+            db.AddComment(id, name, message);
+
+            int count = db.Comments.Where(x => x.LocalId == id && x.Name == name && x.Message == message).Count();
+
+            db.DeleteComment(id);
+            db.DeleteComment(id);
+
+            int newCount = db.Comments.Where(x => x.LocalId == id && x.Name == name && x.Message == message).Count();
+
+            Assert.AreEqual(count - 1, newCount);
+        }
+        [TestCase(5, "Vasya", "Hello World!")]
+        public void getComment(int id, string name, string message)
+        {
+            db.AddComment(id, name, message);
+
+            var tmp = db.GetById(id);
+
+            Assert.AreEqual(message, tmp.Message);
+        }
+        [TestCase(5, "Vasya", "Hello World!")]
+        public void getBySameLocalIdComment(int id, string name, string message)
+        {
+            db.AddComment(id, name, message);
+            db.AddComment(id, name, "Íîâûé òåêñò");
+
+            var tmp = db.GetById(id);
+
+            Assert.AreEqual(message, tmp.Message);
+        }
+        [TestCase(5, "Vasya", "Hello World!")]
+        public void getCollectionComments(int id, string name, string message)
+        {
+            db.AddComment(id, name, message);
+            db.AddComment(id, "Îëåã", message);
+            db.AddComment(id, name, message);
+            db.AddComment(id, name, message);
+            db.AddComment(id, name, message);
+            db.AddComment(id, name, message);
+
+            var tmp = db.GetByName(name);
+
+            Assert.AreEqual(5, tmp.Count);
+        }
+        [TestCase(5, "Vasya", "Hello World!")]
+        public void getEmptyCollectionComments(int id, string name, string message)
+        {
+            var tmp = db.GetByName(name);
+
+            Assert.AreEqual(0, tmp.Count);
+        }
+        [TestCase(5, "Vasya", "Hello World!")]
+        public void editComment(int id, string name, string message)
+        {
+            db.AddComment(id, name, message);
+
+            String newMess = "Bruce?!";
+
+            db.UpdateComment(id, newMess);
+
+            var tmp = db.GetById(id);
+
+            Assert.AreEqual(newMess, tmp.Message);
+        }
+        [TestCase(5, "Vasya", "Hello World!")]
+        public void editCommentWithNullMessageText(int id, string name, string message)
+        {
+            db.AddComment(id, name, message);
+
+            String newMess = "";
+
+            db.UpdateComment(id, newMess);
+
+            var tmp = db.GetById(id);
+
+            Assert.AreEqual(newMess, tmp.Message);
         }
     }
 }

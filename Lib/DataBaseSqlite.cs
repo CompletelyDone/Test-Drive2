@@ -12,9 +12,9 @@ namespace Lib
     public class DataBaseSqlite : DbContext, IDatabaseFunc
     {
         private String path;
-        public DataBaseSqlite(String path)
+        public DataBaseSqlite(String name)
         {
-            this.path = Path.GetTempPath() + path;
+            this.path = Path.GetTempPath() + name;
             Database.EnsureCreated();
         }
         public DbSet<Comment> Comments { get; set; } = null!;
@@ -57,9 +57,10 @@ namespace Lib
             comm.Message = newMessage;
             this.SaveChanges();
         }
-        public void DeleteDatabase()
+        public void RecreateDatabase()
         {
             Database.EnsureDeleted();
+            Database.EnsureCreated();
         }
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
